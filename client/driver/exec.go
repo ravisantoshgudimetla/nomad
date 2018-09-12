@@ -117,7 +117,13 @@ func (d *ExecDriver) Start(ctx *ExecContext, task *structs.Task) (*StartResponse
 	if err != nil {
 		return nil, err
 	}
-	executorCtx := createExecutorContext("exec", ctx, task, d.config)
+	executorCtx := &executor.ExecutorContext{
+		TaskEnv: ctx.TaskEnv,
+		Driver:  "exec",
+		LogDir:  ctx.TaskDir.LogDir,
+		TaskDir: ctx.TaskDir.Dir,
+		Task:    task,
+	}
 	if err := exec.SetContext(executorCtx); err != nil {
 		pluginClient.Kill()
 		return nil, fmt.Errorf("failed to set executor context: %v", err)

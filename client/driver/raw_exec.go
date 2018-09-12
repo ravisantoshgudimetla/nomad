@@ -151,8 +151,13 @@ func (d *RawExecDriver) Start(ctx *ExecContext, task *structs.Task) (*StartRespo
 	if err != nil {
 		return nil, err
 	}
-	executorCtx := createExecutorContext("raw_exec", ctx, task, d.config)
-
+	executorCtx := &executor.ExecutorContext{
+		TaskEnv: ctx.TaskEnv,
+		Driver:  "raw_exec",
+		Task:    task,
+		TaskDir: ctx.TaskDir.Dir,
+		LogDir:  ctx.TaskDir.LogDir,
+	}
 	if err := exec.SetContext(executorCtx); err != nil {
 		pluginClient.Kill()
 		return nil, fmt.Errorf("failed to set executor context: %v", err)
@@ -287,7 +292,7 @@ func (h *rawExecHandle) Update(task *structs.Task) error {
 }
 
 func (h *rawExecHandle) Exec(ctx context.Context, cmd string, args []string) ([]byte, int, error) {
-	return executor.ExecScript(ctx, h.taskDir.Dir, h.taskEnv.List(), nil, h.taskEnv.ReplaceEnv(cmd), h.taskEnv.ParseAndReplace(args))
+	return executor.ExecScript(ctx, h.taskDir.Dir, h.taskEnv, nil, cmd, args)
 }
 
 func (h *rawExecHandle) Signal(s os.Signal) error {

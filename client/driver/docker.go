@@ -835,21 +835,10 @@ func (d *DockerDriver) Start(ctx *ExecContext, task *structs.Task) (*StartRespon
 		return nil, err
 	}
 	executorCtx := &executor.ExecutorContext{
-		Resources: &executor.Resources{
-			CPU:      task.Resources.CPU,
-			MemoryMB: task.Resources.MemoryMB,
-			IOPS:     task.Resources.IOPS,
-			DiskMB:   task.Resources.DiskMB,
-		},
-		Env:    ctx.TaskEnv.List(),
-		Driver: "docker",
-		LogConfig: &executor.LogConfig{
-			LogDir:        ctx.TaskDir.LogDir,
-			StdoutLogFile: fmt.Sprintf("%v.stdout", task.Name),
-			StderrLogFile: fmt.Sprintf("%v.stderr", task.Name),
-			MaxFiles:      task.LogConfig.MaxFiles,
-			MaxFileSizeMB: task.LogConfig.MaxFileSizeMB,
-		},
+		TaskEnv:        ctx.TaskEnv,
+		Task:           task,
+		Driver:         "docker",
+		LogDir:         ctx.TaskDir.LogDir,
 		TaskDir:        ctx.TaskDir.Dir,
 		PortLowerBound: d.config.ClientMinPort,
 		PortUpperBound: d.config.ClientMaxPort,

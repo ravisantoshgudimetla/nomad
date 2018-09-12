@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/nomad/client/stats"
 	cstructs "github.com/hashicorp/nomad/client/structs"
 	"github.com/hashicorp/nomad/helper/uuid"
+	"github.com/hashicorp/nomad/nomad/structs"
 )
 
 var (
@@ -35,7 +36,7 @@ func (e *UniversalExecutor) configureIsolation() error {
 	}
 
 	if e.command.ResourceLimits || e.command.BasicProcessCgroup {
-		if err := e.configureCgroups(e.ctx.Resources); err != nil {
+		if err := e.configureCgroups(e.ctx.Task.Resources); err != nil {
 			return fmt.Errorf("error creating cgroups: %v", err)
 		}
 	}
@@ -121,7 +122,7 @@ func (e *UniversalExecutor) applyLimits(pid int) error {
 
 // configureCgroups converts a Nomad Resources specification into the equivalent
 // cgroup configuration. It returns an error if the resources are invalid.
-func (e *UniversalExecutor) configureCgroups(resources *Resources) error {
+func (e *UniversalExecutor) configureCgroups(resources *structs.Resources) error {
 	e.resConCtx.groups = &cgroupConfig.Cgroup{}
 	e.resConCtx.groups.Resources = &cgroupConfig.Resources{}
 	cgroupName := uuid.Generate()
