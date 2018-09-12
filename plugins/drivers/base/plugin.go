@@ -8,11 +8,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-func LaunchDriver(d Driver) error {
+func LaunchDriver(d DriverPlugin) error {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: plugin.HandshakeConfig{},
 		Plugins: map[string]plugin.Plugin{
-			DriverGoPlugin: &DriverPlugin{impl: d},
+			DriverGoPlugin: &PluginDriver{impl: d},
 		},
 		GRPCServer: plugin.DefaultGRPCServer,
 	})
@@ -30,25 +30,27 @@ func Serve(cfg ServeConfig) error {
 	return nil
 }
 
-type DriverFactory func(interface{}) Driver
+type DriverFactory func(interface{}) DriverPlugin
 
-type DriverPlugin struct {
+// PluginDriver wraps a DriverPlugin and implements go-plugins GRPCPlugin
+// interface to expose the the interface over gRPC
+type PluginDriver struct {
 	plugin.NetRPCUnsupportedPlugin
-	impl Driver
+	impl DriverPlugin
 }
 
-func NewDriverPlugin(d Driver) plugin.GRPCPlugin {
-	return &DriverPlugin{impl: d}
+func NewDriverPlugin(d DriverPlugin) plugin.GRPCPlugin {
+	return &PluginDriver{impl: d}
 }
 
-func (p *DriverPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	proto.RegisterDriverServer(s, &baseDriver{
+func (p *PluginDriver) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+	proto.RegisterDriverServer(s, &driverPluginServer{
 		impl:   p.impl,
 		broker: broker,
 	})
 	return nil
 }
 
-func (p *DriverPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
-	return &driverClient{client: proto.NewDriverClient(c)}, nil
+func (p *PluginDriver) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+	return &driverPluginClient{client: proto.NewDriverClient(c)}, nil
 }
