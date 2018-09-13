@@ -22,10 +22,10 @@ type DriverHarness struct {
 
 func NewDriverHarness(t testing.T, d DriverPlugin) *DriverHarness {
 	client, server := plugin.TestPluginGRPCConn(t, map[string]plugin.Plugin{
-		DriverGoPlugin: &PluginDriver{impl: d},
+		base.PluginTypeDriver: &PluginDriver{impl: d},
 	})
 
-	raw, err := client.Dispense(DriverGoPlugin)
+	raw, err := client.Dispense(base.PluginTypeDriver)
 	if err != nil {
 		t.Fatalf("err dispensing plugin: %v", err)
 	}
@@ -51,8 +51,8 @@ func (h *DriverHarness) Kill() {
 func (h *DriverHarness) MkAllocDir(t *TaskConfig) func() {
 	allocDir, err := ioutil.TempDir("", "nomad_driver_harness-")
 	require.NoError(h.t, err)
-	os.Mkdir(filepath.Join(allocDir, t.Name), os.ModePerm)
-	os.MkdirAll(filepath.Join(allocDir, "alloc/logs"), os.ModePerm)
+	require.NoError(h.t, os.Mkdir(filepath.Join(allocDir, t.Name), os.ModePerm))
+	require.NoError(h.t, os.MkdirAll(filepath.Join(allocDir, "alloc/logs"), os.ModePerm))
 	t.AllocDir = allocDir
 	return func() { os.RemoveAll(allocDir) }
 }

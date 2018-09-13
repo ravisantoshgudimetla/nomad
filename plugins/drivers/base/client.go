@@ -30,10 +30,10 @@ func (d *driverPluginClient) RecoverTask(h *TaskHandle) error {
 }
 
 func (d *driverPluginClient) StartTask(c *TaskConfig) (*TaskHandle, error) {
-	resp, err := d.client.StartTask(context.Background(),
-		&proto.StartTaskRequest{
-			Task: taskConfigToProto(c),
-		})
+	req := &proto.StartTaskRequest{
+		Task: taskConfigToProto(c),
+	}
+	resp, err := d.client.StartTask(context.Background(), req)
 	if err != nil {
 		return nil, err
 	}
@@ -43,26 +43,28 @@ func (d *driverPluginClient) StartTask(c *TaskConfig) (*TaskHandle, error) {
 
 func (d *driverPluginClient) WaitTask(ctx context.Context, id string) chan *TaskResult {
 	ch := make(chan *TaskResult)
-	go func() {
-		defer close(ch)
-		var result TaskResult
-		resp, err := d.client.WaitTask(ctx,
-			&proto.WaitTaskRequest{
-				TaskId: id,
-			})
-		if err != nil {
-			result.Err = err
-		} else {
-			result.ExitCode = int(resp.Result.ExitCode)
-			result.Signal = int(resp.Result.Signal)
-			result.OOMKilled = resp.Result.OomKilled
-			if len(resp.Err) > 0 {
-				result.Err = errors.New(resp.Err)
-			}
-		}
-		ch <- &result
-	}()
+	go d.handleWaitTask(ctx, id, ch)
 	return ch
+}
+
+func (d *driverPluginClient) handleWaitTask(ctx context.Context, id string, ch chan *TaskResult) {
+	defer close(ch)
+	var result TaskResult
+	resp, err := d.client.WaitTask(ctx,
+		&proto.WaitTaskRequest{
+			TaskId: id,
+		})
+	if err != nil {
+		result.Err = err
+	} else {
+		result.ExitCode = int(resp.Result.ExitCode)
+		result.Signal = int(resp.Result.Signal)
+		result.OOMKilled = resp.Result.OomKilled
+		if len(resp.Err) > 0 {
+			result.Err = errors.New(resp.Err)
+		}
+	}
+	ch <- &result
 }
 
 func (d *driverPluginClient) StopTask(taskID string, timeout time.Duration, signal string) error {

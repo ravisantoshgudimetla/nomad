@@ -8,8 +8,6 @@ import (
 	"github.com/hashicorp/nomad/plugins/base"
 )
 
-const DriverGoPlugin = "driver"
-
 type DriverPlugin interface {
 	base.BasePlugin
 
