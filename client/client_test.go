@@ -605,7 +605,6 @@ func TestClient_SaveRestoreState(t *testing.T) {
 	logger := testlog.Logger(t)
 	catalog := consul.NewMockCatalog(logger)
 	mockService := consulApi.NewMockConsulServiceClient(t)
-	mockService.Logger = logger
 	c2, err := NewClient(c1.config, catalog, mockService, logger)
 	if err != nil {
 		t.Fatalf("err: %v", err)
